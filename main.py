@@ -20,8 +20,13 @@ class GruntRunner(object):
         path = settings().get('exec_args').get('path')
         package_path = os.path.join(sublime.packages_path(), package_name)
         args = 'grunt --no-color --tasks "' + package_path + '" expose'
+        #print "PATH:", repr(path)
+        #print "ARGS:", args
 
-        (stdout, stderr) = subprocess.Popen(args, stdout=subprocess.PIPE, env={"PATH": path}, cwd=self.wd, shell=True).communicate()
+        #(stdout, stderr) = subprocess.Popen(args, stdout=subprocess.PIPE, env={"PATH": str(path)}, cwd=self.wd, shell=True).communicate()
+        (stdout, stderr) = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=self.wd, shell=True).communicate()
+        #print "STDOUT:", repr(stdout), repr(stderr)
+        #print "WD:", self.wd
         stdout = stdout.decode('utf8')
         json_match = regex_json.search(stdout)
 
@@ -33,6 +38,8 @@ class GruntRunner(object):
                 sublime.error_message("Could not read available tasks\n")
             else:
                 tasks = [[name, task['info'], task['meta']['info']] for name, task in json_result.items()]
+                #import pprint
+                #pprint.pprint(tasks)
                 return sorted(tasks, key=lambda task: task)
         else:
             self.window.run_command("grunt_error", {"message": "SublimeGrunt: Could not expose available tasks\n\n" + stdout})
@@ -69,7 +76,9 @@ class GruntRunner(object):
 
 
 def settings():
-    return sublime.load_settings('SublimeGrunt.sublime-settings')
+    s = sublime.load_settings('SublimeGrunt.sublime-settings')
+    s.set('exec_args', {'path': os.environ['PATH']})
+    return s
 
 
 class GruntCommand(sublime_plugin.WindowCommand):
